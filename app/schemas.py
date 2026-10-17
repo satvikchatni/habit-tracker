@@ -1,4 +1,4 @@
-from pydantic import BaseModel,field_validator,ConfigDict
+from pydantic import BaseModel,field_validator,ConfigDict,EmailStr,Field
 import uuid
 from datetime import datetime,date
 class HabitCreate(BaseModel):
@@ -19,5 +19,18 @@ class CheckinOut(CheckinCreate):
     habit_id:uuid.UUID
     model_config=ConfigDict(from_attributes=True)
 
-    
+
+class RegisterRequest(BaseModel):
+    email:EmailStr
+    password:str=Field(min_length=8,max_length=128)
+
+class UserResponse(BaseModel):
+    model_config=ConfigDict(from_attributes=True)
+    id:uuid.UUID
+    email:EmailStr
+    created_at:datetime
+
+class TokenResponse(BaseModel):
+    access_token:str
+    token_type:str="bearer"
     

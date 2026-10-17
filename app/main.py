@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.db import engine,DbSession
 from sqlalchemy import text
-from app.routers import habits
+from app.routers import habits,auth
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     yield
@@ -10,6 +10,7 @@ async def lifespan(app:FastAPI):
 
 app=FastAPI(lifespan=lifespan)
 app.include_router(habits.router)
+app.include_router(auth.router)
 @app.get("/")
 def read_root():
     return {"message":"Hello world!"}
