@@ -2,6 +2,7 @@ from pwdlib import PasswordHash
 import uuid
 from datetime import datetime,timedelta,timezone
 import jwt
+import hashlib
 from app.config import settings
 from typing import Annotated
 from fastapi import Depends
@@ -11,6 +12,7 @@ from fastapi import HTTPException
 from app.db import DbSession
 from sqlalchemy import select
 from app.models import User
+import secrets
 
 #need to install python-multipart for oauth2
 from fastapi.security import OAuth2PasswordBearer
@@ -32,11 +34,14 @@ def create_access_token(user_id:uuid.UUID)->str:
     token=jwt.encode(payload,settings.secret_key,algorithm=settings.algorithm)
     return token
 
+def decode_access_token(token:str):
+        payload=jwt.decode(token,settings.secret_key,algorithms=[settings.algorithm],options={"require":["sub","exp"]})
+        return uuid.UUID(payload["sub"])
+
 async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:DbSession)->User:
     
     try:
-        payload=jwt.decode(token,settings.secret_key,algorithms=[settings.algorithm],options={"require":["sub","exp"]})
-        user_id=uuid.UUID(payload["sub"])
+        user_id=decode_access_token(token=token)
     except jwt.InvalidTokenError, ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -61,3 +66,14 @@ async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:DbSess
     return user
     
 CurrentUser=Annotated[User,Depends(get_current_user)]
+
+
+def create_refresh_token()->str:
+    return secrets.token_urlsafe(32)
+
+def hash_token(token:str)->str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+#.encode() converts the text str into raw bytes(0s and 1s), hashing algos operate on raw bytes
+#hashlib.sha256() hashes the raw bytes ,returns a hash object,not readable text sha256 algorithm used
+#.hexdigest() converts that into text,a string containing only no's 0-9 and letters a-z
