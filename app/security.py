@@ -1,6 +1,6 @@
 from pwdlib import PasswordHash
 import uuid
-from datetime import datetime,timedelta,timezone
+from datetime import datetime,timedelta,timezone,UTC
 import jwt
 import hashlib
 from app.config import settings
@@ -10,8 +10,9 @@ from app.config import settings
 from fastapi import status
 from fastapi import HTTPException
 from app.db import DbSession
-from sqlalchemy import select
-from app.models import User
+from sqlalchemy import select,update
+
+from app.models import User,RefreshToken
 import secrets
 
 #need to install python-multipart for oauth2
@@ -42,7 +43,7 @@ async def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],db:DbSess
     
     try:
         user_id=decode_access_token(token=token)
-    except jwt.InvalidTokenError, ValueError:
+    except (jwt.InvalidTokenError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials/Could not validate credentials",
@@ -77,3 +78,14 @@ def hash_token(token:str)->str:
 #.encode() converts the text str into raw bytes(0s and 1s), hashing algos operate on raw bytes
 #hashlib.sha256() hashes the raw bytes ,returns a hash object,not readable text sha256 algorithm used
 #.hexdigest() converts that into text,a string containing only no's 0-9 and letters a-z
+
+
+#caller has to commit
+async def issue_refresh_token(db:DbSession,user_id:uuid.UUID,family_id:uuid.UUID|None= None):
+    refresh_token=create_refresh_token()
+    rt=RefreshToken(user_id=user_id,family_id=family_id or uuid.uuid4(),expires_at=datetime.now(UTC)+timedelta(days=settings.refresh_token_expire_days),token_hash=hash_token(refresh_token))
+    db.add(rt)
+    return refresh_token
+
+async def revoke_family(db:DbSession,family_id:uuid.UUID):
+    await db.execute(update(RefreshToken).where(RefreshToken.family_id==family_id,RefreshToken.revoked_at.is_(None)).values(revoked_at=datetime.now(UTC)))

@@ -33,4 +33,7 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token:str
     token_type:str="bearer"
-    
+    refresh_token:str
+
+class RefreshRequest(BaseModel):
+    refresh_token:str

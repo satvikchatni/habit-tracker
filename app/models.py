@@ -30,9 +30,9 @@ class Checkins(Base):
 class RefreshTokens(Base):
     __tablename__="refresh_tokens"
     id:Mapped[uuid.UUID]=mapped_column(primary_key=True,default=uuid.uuid4)
-    user_id=Mapped[uuid.UUID]=mapped_column(ForeignKey("users.id",ondelete="cascade"),index=True)
-    family_id=Mapped[uuid.UUID]=mapped_column(index=True)
-    token_hash=Mapped[str]=mapped_column(unique=True)
-    expires_at=Mapped[datetime]=mapped_column(TIMESTAMP(timezone=True))
-    revoked_at=Mapped[datetime|None]=mapped_column(TIMESTAMP(timezone=True))
-    created_at=Mapped[datetime]=mapped_column(TIMESTAMP(timezone=True),server_default=text('now()'))
+    user_id:Mapped[uuid.UUID]=mapped_column(ForeignKey("users.id",ondelete="cascade"),index=True)
+    family_id:Mapped[uuid.UUID]=mapped_column(index=True)
+    token_hash:Mapped[str]=mapped_column(unique=True)
+    expires_at:Mapped[datetime]=mapped_column(TIMESTAMP(timezone=True))
+    revoked_at:Mapped[datetime|None]=mapped_column(TIMESTAMP(timezone=True))
+    created_at:Mapped[datetime]=mapped_column(TIMESTAMP(timezone=True),server_default=text('now()'))
